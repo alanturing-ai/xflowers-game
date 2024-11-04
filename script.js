@@ -18,34 +18,72 @@ document.addEventListener('DOMContentLoaded', function() {
     function createBoard() {
     board.innerHTML = '';
     
-    // Создаем поле
-    function generateValidBoard() {
-        const cells = [];
-        for (let i = 0; i < 36; i++) {
-            let newFlower;
-            do {
-                newFlower = flowers[Math.floor(Math.random() * flowers.length)];
-                cells[i] = newFlower;
-            } while (
-                // Проверка горизонтальных рядов
-                (i % 6 >= 2 &&
-                    cells[i-1] === newFlower &&
-                    cells[i-2] === newFlower) ||
-                // Проверка вертикальных рядов
-                (i >= 12 &&
-                    cells[i-6] === newFlower &&
-                    cells[i-12] === newFlower)
-            );
-            
-            const cell = document.createElement('div');
-            cell.classList.add('cell');
-            cell.dataset.index = i;
-            cell.textContent = newFlower;
-            board.appendChild(cell);
+    function hasMatch(grid, index, flower) {
+        const row = Math.floor(index / 6);
+        const col = index % 6;
+        
+        // Проверка горизонтали (влево)
+        if (col >= 2) {
+            if (grid[index-1] === flower && grid[index-2] === flower) {
+                return true;
+            }
         }
+        
+        // Проверка вертикали (вверх)
+        if (row >= 2) {
+            if (grid[index-6] === flower && grid[index-12] === flower) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    generateValidBoard();
+    let attempts = 0;
+    let grid;
+
+    do {
+        attempts++;
+        grid = new Array(36);
+        let valid = true;
+
+        for (let i = 0; i < 36 && valid; i++) {
+            let possibleFlowers = [...flowers];
+            let placed = false;
+
+            while (possibleFlowers.length && !placed) {
+                const randomIndex = Math.floor(Math.random() * possibleFlowers.length);
+                const flower = possibleFlowers[randomIndex];
+                
+                if (!hasMatch(grid, i, flower)) {
+                    grid[i] = flower;
+                    placed = true;
+                } else {
+                    possibleFlowers.splice(randomIndex, 1);
+                }
+            }
+
+            if (!placed) {
+                valid = false;
+            }
+        }
+
+        if (valid) {
+            grid.forEach((flower, i) => {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.index = i;
+                cell.textContent = flower;
+                board.appendChild(cell);
+            });
+            return;
+        }
+
+        if (attempts > 100) {
+            console.log("Не удалось создать поле без совпадений, создаю новое...");
+            attempts = 0;
+        }
+    } while (true);
 }
 
     function startGame() {
