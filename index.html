@@ -1,38 +1,24 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Игра X FLOWERS</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="game-container">
-        <header class="header">
-            <a href="#" class="close-btn">Закрыть</a>
-            <div>
-                <h1 class="title">Игра X FLOWERS</h1>
-                <p class="subtitle">мини-приложение</p>
-            </div>
-            <div class="header-spacer"></div>
-        </header>
-
-        <div class="score-time">
-            <div>Время: <span id="time">45</span></div>
-            <div>Очки: <span id="score">0</span></div>
-        </div>
-
-        <button class="start-btn" id="startBtn">Начать игру</button>
-
-        <div class="game-board" id="gameBoard"></div>
+    <div class="stats">
+        <div>Время: <span id="time">45</span></div>
+        <div>Очки: <span id="score">0</span></div>
     </div>
-
-    <div class="modal" id="gameOverModal">
-        <div class="modal-content">
-            <h2>Игра окончена! Ваш счет:</h2>
-            <p id="finalScore">0</p>
-            <button id="okBtn">OK</button>
-        </div>
+    
+    <button class="start-btn" onclick="startGame()">Начать игру</button>
+    
+    <div class="grid" id="grid"></div>
+    
+    <div class="popup" id="popup">
+        <h2>Игра окончена!</h2>
+        <p>Ваш счет: <span id="finalScore">0</span></p>
+        <button onclick="closePopup()">OK</button>
     </div>
 
     <script src="game.js"></script>
