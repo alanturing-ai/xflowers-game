@@ -1,27 +1,37 @@
-<<!DOCTYPE html>
-<html>
+<!DOCTYPE html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Игра X FLOWERS</title>
 </head>
 <body>
-    <div class="stats">
-        <div>Время: <span id="time">45</span></div>
-        <div>Очки: <span id="score">0</span></div>
-    </div>
-    
-    <button class="start-btn" onclick="startGame()">Начать игру</button>
-    
-    <div class="grid" id="grid"></div>
-    
-    <div class="popup" id="popup">
-        <h2>Игра окончена!</h2>
-        <p>Ваш счет: <span id="finalScore">0</span></p>
-        <button onclick="closePopup()">OK</button>
-    </div>
+   <div class="container">
+       <!-- Заголовок -->
+       <h1 class="title">Игра X FLOWERS</h1>
+       
+       <!-- Счетчики -->
+       <div class="counters">
+           <div class="time">Время: <span id="timeCounter">45</span></div>
+           <div class="score">Очки: <span id="scoreCounter">0</span></div>
+       </div>
 
-    <script src="game.js"></script>
+       <!-- Кнопка старта -->
+       <button id="startButton" class="start-btn">Начать игру</button>
+
+       <!-- Игровое поле -->
+       <div class="game-board">
+           <!-- Grid 6x6 будет создаваться через JavaScript -->
+       </div>
+
+       <!-- Модальное окно результатов -->
+       <div id="modalResult" class="modal">
+           <div class="modal-content">
+               <h2>Игра окончена! Ваш счет:</h2>
+               <p id="finalScore">0</p>
+               <button id="okButton">OK</button>
+           </div>
+       </div>
+   </div>
 </body>
 </html>
