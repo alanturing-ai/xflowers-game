@@ -5,6 +5,21 @@
     text-align: center;
 }
 
+button {
+    padding: 10px 20px;
+    font-size: 18px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 10px;
+}
+
+button:hover {
+    background: #45a049;
+}
+
 .info-panel {
     display: flex;
     justify-content: space-between;
@@ -40,5 +55,17 @@
 
 .selected {
     border-color: #4CAF50;
+    background: #e8f5e9;
+}
+
+.end-screen {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.start-screen {
+    text-align: center;
+    margin-top: 50px;
+}
     background: #e8f5e9;
 }
