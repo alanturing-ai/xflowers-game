@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let timer;
     let selectedCell = null;
 
-    // Сразу создаем игровое поле
+    // Сразу создаем поле при загрузке
     createBoard();
 
     function createBoard() {
@@ -28,14 +28,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    startButton.addEventListener('click', startGame);
-    board.addEventListener('click', handleCellClick);
-    okButton.addEventListener('click', () => modalResult.style.display = 'none');
-
     function startGame() {
+        // Сброс предыдущей игры
+        clearInterval(timer);
+        isPlaying = true;
         score = 0;
         timeLeft = 45;
-        isPlaying = true;
         scoreCounter.textContent = '0';
         timeCounter.textContent = '45';
         createBoard();
@@ -43,13 +41,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function startTimer() {
-        clearInterval(timer);
         timer = setInterval(() => {
-            timeLeft--;
-            timeCounter.textContent = timeLeft;
-            if (timeLeft <= 0) endGame();
+            if (timeLeft > 0) {
+                timeLeft--;
+                timeCounter.textContent = timeLeft;
+                if (timeLeft === 0) {
+                    endGame();
+                }
+            }
         }, 1000);
     }
+
+    function endGame() {
+        clearInterval(timer);
+        isPlaying = false;
+        modalResult.style.display = 'block';
+        finalScore.textContent = score;
+        // Разрешаем начать новую игру
+        startButton.disabled = false;
+    }
+
+    // Обработчики
+    startButton.addEventListener('click', startGame);
+    board.addEventListener('click', handleCellClick);
+    okButton.addEventListener('click', () => {
+        modalResult.style.display = 'none';
+    });
 
     function handleCellClick(e) {
         if (!isPlaying) return;
@@ -150,12 +167,5 @@ document.addEventListener('DOMContentLoaded', function() {
             case 5: score += 300; break;
         }
         scoreCounter.textContent = score;
-    }
-
-    function endGame() {
-        clearInterval(timer);
-        isPlaying = false;
-        modalResult.style.display = 'block';
-        finalScore.textContent = score;
     }
 });
