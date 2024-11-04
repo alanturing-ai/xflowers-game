@@ -1,37 +1,33 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>Игра X FLOWERS</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра X FLOWERS</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-   <div class="container">
-       <!-- Заголовок -->
-       <h1 class="title">Игра X FLOWERS</h1>
-       
-       <!-- Счетчики -->
-       <div class="counters">
-           <div class="time">Время: <span id="timeCounter">45</span></div>
-           <div class="score">Очки: <span id="scoreCounter">0</span></div>
-       </div>
+    <div class="container">
+        <h1 class="title">Игра X FLOWERS</h1>
+        
+        <div class="counters">
+            <div class="time">Время: <span id="timeCounter">45</span></div>
+            <div class="score">Очки: <span id="scoreCounter">0</span></div>
+        </div>
 
-       <!-- Кнопка старта -->
-       <button id="startButton" class="start-btn">Начать игру</button>
+        <button id="startButton" class="start-btn">Начать игру</button>
 
-       <!-- Игровое поле -->
-       <div class="game-board">
-           <!-- Grid 6x6 будет создаваться через JavaScript -->
-       </div>
+        <div class="game-board">
+        </div>
 
-       <!-- Модальное окно результатов -->
-       <div id="modalResult" class="modal">
-           <div class="modal-content">
-               <h2>Игра окончена! Ваш счет:</h2>
-               <p id="finalScore">0</p>
-               <button id="okButton">OK</button>
-           </div>
-       </div>
-   </div>
+        <div id="modalResult" class="modal">
+            <div class="modal-content">
+                <h2>Игра окончена! Ваш счет:</h2>
+                <p id="finalScore">0</p>
+                <button id="okButton">OK</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
