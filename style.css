@@ -87,10 +87,8 @@ body {
     position: relative;
 }
 
-.cell img {
-    width: 80%;
-    height: 80%;
-    object-fit: contain;
+.cell {
+    font-size: 2rem;
     transition: transform 0.2s;
 }
 
