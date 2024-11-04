@@ -4,6 +4,24 @@ const FLOWERS = ['🌷', '🌻', '🌹', '🍁'];
 let score = 0;
 let timeLeft = GAME_TIME;
 let selectedCell = null;
+let timer = null;
+
+document.getElementById('startButton').addEventListener('click', startGame);
+document.getElementById('restartButton').addEventListener('click', startGame);
+
+function startGame() {
+    score = 0;
+    timeLeft = GAME_TIME;
+    document.getElementById('startScreen').style.display = 'none';
+    document.getElementById('endScreen').style.display = 'none';
+    document.getElementById('gameScreen').style.display = 'block';
+    document.getElementById('score').textContent = '0';
+    document.getElementById('timer').textContent = GAME_TIME;
+    
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    initGame();
+}
 
 function initGame() {
     createGrid();
@@ -108,7 +126,6 @@ function updateScore(points) {
 }
 
 function fillGaps() {
-    // Заполнение пустых ячеек новыми цветами
     const grid = document.getElementById('grid');
     Array.from(grid.children).forEach(cell => {
         if (!cell.textContent) {
@@ -118,8 +135,9 @@ function fillGaps() {
 }
 
 function startTimer() {
+    if (timer) clearInterval(timer);
     const timerElement = document.getElementById('timer');
-    const timer = setInterval(() => {
+    timer = setInterval(() => {
         timeLeft--;
         timerElement.textContent = timeLeft;
         
@@ -131,12 +149,8 @@ function startTimer() {
 }
 
 function endGame() {
-    alert(`Игра окончена! Ваш счет: ${score}`);
-    // Отключаем обработчики событий
-    const grid = document.getElementById('grid');
-    Array.from(grid.children).forEach(cell => {
-        cell.removeEventListener('click', handleCellClick);
-    });
+    document.getElementById('gameScreen').style.display = 'none';
+    document.getElementById('endScreen').style.display = 'block';
+    document.getElementById('finalScore').textContent = score;
+    clearInterval(timer);
 }
-
-initGame();
