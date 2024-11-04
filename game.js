@@ -2,6 +2,8 @@ const GRID_SIZE = 6;
 const GAME_TIME = 45;
 const FLOWERS = ['🌹', '🌷', '🌻', '🍁'];
 const MAX_CASCADES = 3;
+const MATCH_DELAY = 300;
+const DROP_DELAY = 200;
 
 let score = 0;
 let timer = GAME_TIME;
@@ -10,13 +12,16 @@ let selectedCell = null;
 let timerInterval;
 let board = [];
 let cascadeCount = 0;
+let isProcessing = false;
 
 function initializeGame() {
     const gameBoard = document.getElementById('gameBoard');
     gameBoard.innerHTML = '';
     board = [];
     cascadeCount = 0;
+    isProcessing = false;
 
+    // Создаем доску
     for (let i = 0; i < GRID_SIZE; i++) {
         board[i] = [];
         for (let j = 0; j < GRID_SIZE; j++) {
@@ -31,24 +36,37 @@ function initializeGame() {
         }
     }
     
-    while (checkForMatches()) {
-        refillBoard();
+    // Убираем начальные совпадения
+    while (findMatches().size > 0) {
+        shuffleBoard();
     }
+    updateBoardDisplay();
 }
 
 function generateRandomFlower() {
     return FLOWERS[Math.floor(Math.random() * FLOWERS.length)];
 }
 
+function shuffleBoard() {
+    for (let i = 0; i < GRID_SIZE; i++) {
+        for (let j = 0; j < GRID_SIZE; j++) {
+            board[i][j] = generateRandomFlower();
+        }
+    }
+}
+
 function startGame() {
     score = 0;
     timer = GAME_TIME;
     isPlaying = true;
+    isProcessing = false;
     updateScore();
     updateTimer();
     initializeGame();
 
-    if (timerInterval) clearInterval(timerInterval);
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
     timerInterval = setInterval(() => {
         timer--;
         updateTimer();
@@ -61,6 +79,7 @@ function startGame() {
 function endGame() {
     isPlaying = false;
     clearInterval(timerInterval);
+    timerInterval = null;
     alert(`Игра окончена! Ваш счет: ${score}`);
 }
 
@@ -72,8 +91,8 @@ function updateTimer() {
     document.getElementById('timeDisplay').textContent = timer;
 }
 
-function handleCellClick(event) {
-    if (!isPlaying) return;
+async function handleCellClick(event) {
+    if (!isPlaying || isProcessing) return;
 
     const row = parseInt(event.target.dataset.row);
     const col = parseInt(event.target.dataset.col);
@@ -88,13 +107,9 @@ function handleCellClick(event) {
         previousCell.classList.remove('selected');
 
         if (isAdjacent(selectedCell, { row, col })) {
-            swapCells(selectedCell, { row, col });
-            cascadeCount = 0;
-            if (!processCascade()) {
-                setTimeout(() => {
-                    swapCells(selectedCell, { row, col });
-                }, 300);
-            }
+            isProcessing = true;
+            await makeMove(selectedCell, { row, col });
+            isProcessing = false;
         }
         selectedCell = null;
     }
@@ -107,6 +122,15 @@ function isAdjacent(cell1, cell2) {
     );
 }
 
+async function makeMove(cell1, cell2) {
+    swapCells(cell1, cell2);
+    
+    if (!(await processCascade())) {
+        swapCells(cell1, cell2);
+        updateBoardDisplay();
+    }
+}
+
 function swapCells(cell1, cell2) {
     const temp = board[cell1.row][cell1.col];
     board[cell1.row][cell1.col] = board[cell2.row][cell2.col];
@@ -115,100 +139,100 @@ function swapCells(cell1, cell2) {
 }
 
 async function processCascade() {
-    if (cascadeCount >= MAX_CASCADES) {
-        return false;
-    }
+    cascadeCount = 0;
+    let hasMatched = false;
 
-    let hasMatches = checkForMatches();
-    if (!hasMatches) return false;
+    while (cascadeCount < MAX_CASCADES) {
+        const matches = findMatches();
+        if (matches.size === 0) break;
 
-    while (hasMatches && cascadeCount < MAX_CASCADES) {
+        hasMatched = true;
         cascadeCount++;
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        dropCells();
+
+        // Анимация и удаление совпадений
+        await animateMatches(matches);
+        removeMatches(matches);
+        await delay(MATCH_DELAY);
+
+        // Падение и заполнение
+        await dropCells();
         fillEmptyCells();
         updateBoardDisplay();
-        
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        hasMatches = checkForMatches();
+        await delay(DROP_DELAY);
     }
-    
-    return true;
+
+    return hasMatched;
 }
 
-function checkForMatches() {
-    let hasMatches = false;
-    let matches = new Set();
+function findMatches() {
+    const matches = new Set();
 
     // Проверка горизонтальных совпадений
     for (let i = 0; i < GRID_SIZE; i++) {
-        let count = 1;
-        for (let j = 1; j < GRID_SIZE; j++) {
-            if (board[i][j] && board[i][j] === board[i][j-1]) {
-                count++;
-            } else {
-                if (count >= 3) {
-                    for (let k = 0; k < count; k++) {
-                        matches.add(`${i},${j-1-k}`);
+        for (let j = 0; j < GRID_SIZE - 2; j++) {
+            if (board[i][j] &&
+                board[i][j] === board[i][j + 1] &&
+                board[i][j] === board[i][j + 2]) {
+                matches.add(`${i},${j}`);
+                matches.add(`${i},${j + 1}`);
+                matches.add(`${i},${j + 2}`);
+                
+                // Проверяем дополнительные совпадения
+                if (j + 3 < GRID_SIZE && board[i][j] === board[i][j + 3]) {
+                    matches.add(`${i},${j + 3}`);
+                    if (j + 4 < GRID_SIZE && board[i][j] === board[i][j + 4]) {
+                        matches.add(`${i},${j + 4}`);
                     }
-                    hasMatches = true;
                 }
-                count = 1;
             }
-        }
-        if (count >= 3) {
-            for (let k = 0; k < count; k++) {
-                matches.add(`${i},${GRID_SIZE-1-k}`);
-            }
-            hasMatches = true;
         }
     }
 
     // Проверка вертикальных совпадений
     for (let j = 0; j < GRID_SIZE; j++) {
-        let count = 1;
-        for (let i = 1; i < GRID_SIZE; i++) {
-            if (board[i][j] && board[i][j] === board[i-1][j]) {
-                count++;
-            } else {
-                if (count >= 3) {
-                    for (let k = 0; k < count; k++) {
-                        matches.add(`${i-1-k},${j}`);
+        for (let i = 0; i < GRID_SIZE - 2; i++) {
+            if (board[i][j] &&
+                board[i][j] === board[i + 1][j] &&
+                board[i][j] === board[i + 2][j]) {
+                matches.add(`${i},${j}`);
+                matches.add(`${i + 1},${j}`);
+                matches.add(`${i + 2},${j}`);
+                
+                // Проверяем дополнительные совпадения
+                if (i + 3 < GRID_SIZE && board[i][j] === board[i + 3][j]) {
+                    matches.add(`${i + 3},${j}`);
+                    if (i + 4 < GRID_SIZE && board[i][j] === board[i + 4][j]) {
+                        matches.add(`${i + 4},${j}`);
                     }
-                    hasMatches = true;
                 }
-                count = 1;
             }
-        }
-        if (count >= 3) {
-            for (let k = 0; k < count; k++) {
-                matches.add(`${GRID_SIZE-1-k},${j}`);
-            }
-            hasMatches = true;
         }
     }
 
-    if (hasMatches) {
-        matches.forEach(match => {
-            const [row, col] = match.split(',').map(Number);
-            const cell = document.querySelector(
-                `.cell[data-row="${row}"][data-col="${col}"]`
-            );
-            cell.classList.add('matched');
-            board[row][col] = null;
-        });
-
-        score += matches.size * 100 * (cascadeCount + 1);
-        updateScore();
-    }
-
-    return hasMatches;
+    return matches;
 }
 
-function dropCells() {
+async function animateMatches(matches) {
+    matches.forEach(match => {
+        const [row, col] = match.split(',').map(Number);
+        const cell = document.querySelector(
+            `.cell[data-row="${row}"][data-col="${col}"]`
+        );
+        cell.classList.add('matched');
+    });
+    await delay(300);
+}
+
+function removeMatches(matches) {
+    matches.forEach(match => {
+        const [row, col] = match.split(',').map(Number);
+        board[row][col] = null;
+    });
+    score += matches.size * 100 * cascadeCount;
+    updateScore();
+}
+
+async function dropCells() {
     for (let col = 0; col < GRID_SIZE; col++) {
         let emptyRow = GRID_SIZE - 1;
         for (let row = GRID_SIZE - 1; row >= 0; row--) {
@@ -216,16 +240,16 @@ function dropCells() {
                 if (emptyRow !== row) {
                     board[emptyRow][col] = board[row][col];
                     board[row][col] = null;
-                    
                     const cell = document.querySelector(
                         `.cell[data-row="${emptyRow}"][data-col="${col}"]`
                     );
-                    cell.style.animation = 'drop 0.3s ease-in';
+                    cell.style.animation = `drop ${DROP_DELAY}ms ease-in`;
                 }
                 emptyRow--;
             }
         }
     }
+    await delay(DROP_DELAY);
 }
 
 function fillEmptyCells() {
@@ -233,11 +257,10 @@ function fillEmptyCells() {
         for (let j = 0; j < GRID_SIZE; j++) {
             if (board[i][j] === null) {
                 board[i][j] = generateRandomFlower();
-                
                 const cell = document.querySelector(
                     `.cell[data-row="${i}"][data-col="${j}"]`
                 );
-                cell.style.animation = 'drop 0.3s ease-in';
+                cell.style.animation = `drop ${DROP_DELAY}ms ease-in`;
             }
         }
     }
@@ -250,22 +273,15 @@ function updateBoardDisplay() {
         const col = parseInt(cell.dataset.col);
         cell.textContent = board[row][col];
         cell.classList.remove('matched');
-        cell.style.animation = '';
     });
 }
 
-function refillBoard() {
-    for (let i = 0; i < GRID_SIZE; i++) {
-        for (let j = 0; j < GRID_SIZE; j++) {
-            if (board[i][j] === null) {
-                board[i][j] = generateRandomFlower();
-            }
-        }
-    }
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', function() {
-    initializeGame(); // Инициализируем игру
-    document.getElementById('startButton').addEventListener('click', startGame); // Добавляем обработчик кнопки
+    initializeGame();
+    document.getElementById('startButton').addEventListener('click', startGame);
 });
