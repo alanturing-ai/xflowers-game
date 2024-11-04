@@ -1,125 +1,99 @@
-const GRID_SIZE = 6;
+// Конфигурация игры
+const BOARD_SIZE = 6;
 const GAME_TIME = 45;
-const FLOWERS = ['🌹', '🌷', '🌻', '🍁'];
+const MATCH_SCORES = {
+    3: 100,
+    4: 200,
+    5: 300
+};
 
+// Эмодзи цветов
+const FLOWERS = [
+    '🍁',    // кленовый лист
+    '🌻',    // подсолнух
+    '🌷',    // тюльпан
+    '🌹'     // роза
+];
+
+// Состояние игры
+let board = [];
 let score = 0;
-let timer = GAME_TIME;
+let timeLeft = GAME_TIME;
 let isPlaying = false;
 let selectedCell = null;
-let timerInterval;
-let board = [];
+let gameTimer = null;
+
+// DOM элементы
+const gameBoard = document.getElementById('gameBoard');
+const startBtn = document.getElementById('startBtn');
+const timeDisplay = document.getElementById('time');
+const scoreDisplay = document.getElementById('score');
+const modal = document.getElementById('gameOverModal');
+const finalScoreDisplay = document.getElementById('finalScore');
+const okBtn = document.getElementById('okBtn');
 
 // Инициализация игры
-function initializeGame() {
-    const gameBoard = document.getElementById('gameBoard');
-    gameBoard.innerHTML = '';
-    board = [];
+function initGame() {
+    board = createBoard();
+    score = 0;
+    timeLeft = GAME_TIME;
+    isPlaying = true;
+    selectedCell = null;
+    
+    updateDisplay();
+    renderBoard();
+    startTimer();
+}
 
-    // Создаем доску
-    for (let i = 0; i < GRID_SIZE; i++) {
-        board[i] = [];
-        for (let j = 0; j < GRID_SIZE; j++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            cell.dataset.row = i;
-            cell.dataset.col = j;
-            board[i][j] = getRandomFlower();
-            cell.textContent = board[i][j];
-            cell.addEventListener('click', handleCellClick);
+// Создание случайного игрового поля
+function createBoard() {
+    const newBoard = [];
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        newBoard[i] = [];
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            newBoard[i][j] = Math.floor(Math.random() * FLOWERS.length);
+        }
+    }
+    return newBoard;
+}
+
+// Отрисовка игрового поля
+function renderBoard() {
+    gameBoard.innerHTML = '';
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            const cell = createCell(i, j);
             gameBoard.appendChild(cell);
         }
     }
-
-    // Убираем начальные совпадения
-    while (hasMatches()) {
-        shuffleBoard();
-        updateBoard();
-    }
 }
 
-function getRandomFlower() {
-    return FLOWERS[Math.floor(Math.random() * FLOWERS.length)];
+// Создание ячейки
+function createCell(row, col) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.textContent = FLOWERS[board[row][col]];
+    cell.addEventListener('click', () => handleCellClick(row, col, cell));
+    return cell;
 }
 
-function shuffleBoard() {
-    for (let i = 0; i < GRID_SIZE; i++) {
-        for (let j = 0; j < GRID_SIZE; j++) {
-            board[i][j] = getRandomFlower();
-        }
-    }
-}
-
-function updateBoard() {
-    const cells = document.querySelectorAll('.cell');
-    cells.forEach(cell => {
-        const row = parseInt(cell.dataset.row);
-        const col = parseInt(cell.dataset.col);
-        cell.textContent = board[row][col];
-        cell.classList.remove('matched');
-    });
-}
-
-// Управление игрой
-function startGame() {
-    score = 0;
-    timer = GAME_TIME;
-    isPlaying = true;
-    updateScore();
-    updateTimer();
-    initializeGame();
-
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-        timer--;
-        updateTimer();
-        if (timer <= 0) endGame();
-    }, 1000);
-}
-
-function endGame() {
-    isPlaying = false;
-    clearInterval(timerInterval);
-    timerInterval = null;
-    alert(`Игра окончена! Ваш счет: ${score}`);
-}
-
-function updateScore() {
-    document.getElementById('scoreDisplay').textContent = score;
-}
-
-function updateTimer() {
-    document.getElementById('timeDisplay').textContent = timer;
-}
-
-// Обработка кликов
-function handleCellClick(event) {
+// Обработка клика по ячейке
+function handleCellClick(row, col, cell) {
     if (!isPlaying) return;
-
-    const row = parseInt(event.target.dataset.row);
-    const col = parseInt(event.target.dataset.col);
-
-    if (selectedCell === null) {
-        selectedCell = { row, col };
-        event.target.classList.add('selected');
+    
+    if (!selectedCell) {
+        selectedCell = { row, col, element: cell };
+        cell.classList.add('selected');
     } else {
-        const previousCell = document.querySelector(
-            `.cell[data-row="${selectedCell.row}"][data-col="${selectedCell.col}"]`
-        );
-        previousCell.classList.remove('selected');
-
         if (isAdjacent(selectedCell, { row, col })) {
             swapCells(selectedCell, { row, col });
-            if (!checkAndProcessMatches()) {
-                setTimeout(() => {
-                    swapCells(selectedCell, { row, col });
-                    updateBoard();
-                }, 300);
-            }
         }
+        selectedCell.element.classList.remove('selected');
         selectedCell = null;
     }
 }
 
+// Проверка соседства ячеек
 function isAdjacent(cell1, cell2) {
     return (
         (Math.abs(cell1.row - cell2.row) === 1 && cell1.col === cell2.col) ||
@@ -127,135 +101,208 @@ function isAdjacent(cell1, cell2) {
     );
 }
 
-function swapCells(cell1, cell2) {
+// Обмен ячеек
+async function swapCells(cell1, cell2) {
     const temp = board[cell1.row][cell1.col];
     board[cell1.row][cell1.col] = board[cell2.row][cell2.col];
     board[cell2.row][cell2.col] = temp;
-    updateBoard();
-}
-
-// Проверка совпадений
-function hasMatches() {
-    // Проверка горизонтальных совпадений
-    for (let i = 0; i < GRID_SIZE; i++) {
-        for (let j = 0; j < GRID_SIZE - 2; j++) {
-            if (board[i][j] && 
-                board[i][j] === board[i][j + 1] && 
-                board[i][j] === board[i][j + 2]) {
-                return true;
-            }
-        }
+    
+    const matches = findMatches();
+    if (matches.length > 0) {
+        await processMatches(matches);
+    } else {
+        // Отменяем обмен, если нет совпадений
+        board[cell2.row][cell2.col] = board[cell1.row][cell1.col];
+        board[cell1.row][cell1.col] = temp;
+        renderBoard();
     }
-
-    // Проверка вертикальных совпадений
-    for (let i = 0; i < GRID_SIZE - 2; i++) {
-        for (let j = 0; j < GRID_SIZE; j++) {
-            if (board[i][j] && 
-                board[i][j] === board[i + 1][j] && 
-                board[i][j] === board[i + 2][j]) {
-                return true;
-            }
-        }
-    }
-
-    return false;
 }
 
-function checkAndProcessMatches() {
-    let matched = false;
-    let matchCount = 0;
-
-    do {
-        const matches = findMatches();
-        if (matches.size === 0) break;
-
-        matched = true;
-        matchCount++;
-
-        // Удаляем совпадения
-        matches.forEach(match => {
-            const [row, col] = match.split(',').map(Number);
-            const cell = document.querySelector(
-                `.cell[data-row="${row}"][data-col="${col}"]`
-            );
-            cell.classList.add('matched');
-            board[row][col] = null;
-        });
-
-        score += matches.size * 100 * matchCount;
-        updateScore();
-
-        // Даем время на анимацию
-        setTimeout(() => {
-            dropCells();
-            fillEmptyCells();
-            updateBoard();
-        }, 300);
-
-    } while (matchCount < 3 && hasMatches());
-
-    return matched;
-}
-
+// Поиск совпадений
 function findMatches() {
-    const matches = new Set();
-
-    // Проверяем горизонтальные совпадения
-    for (let i = 0; i < GRID_SIZE; i++) {
-        for (let j = 0; j < GRID_SIZE - 2; j++) {
-            if (board[i][j] && 
-                board[i][j] === board[i][j + 1] && 
-                board[i][j] === board[i][j + 2]) {
-                matches.add(`${i},${j}`);
-                matches.add(`${i},${j + 1}`);
-                matches.add(`${i},${j + 2}`);
+    const matches = [];
+    
+    // Проверка горизонтальных совпадений
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        let count = 1;
+        let type = board[i][0];
+        
+        for (let j = 1; j < BOARD_SIZE; j++) {
+            if (board[i][j] === type) {
+                count++;
+            } else {
+                if (count >= 3) {
+                    matches.push({
+                        row: i,
+                        startCol: j - count,
+                        endCol: j - 1,
+                        length: count,
+                        type: 'horizontal'
+                    });
+                }
+                count = 1;
+                type = board[i][j];
             }
         }
-    }
-
-    // Проверяем вертикальные совпадения
-    for (let i = 0; i < GRID_SIZE - 2; i++) {
-        for (let j = 0; j < GRID_SIZE; j++) {
-            if (board[i][j] && 
-                board[i][j] === board[i + 1][j] && 
-                board[i][j] === board[i + 2][j]) {
-                matches.add(`${i},${j}`);
-                matches.add(`${i + 1},${j}`);
-                matches.add(`${i + 2},${j}`);
-            }
+        if (count >= 3) {
+            matches.push({
+                row: i,
+                startCol: BOARD_SIZE - count,
+                endCol: BOARD_SIZE - 1,
+                length: count,
+                type: 'horizontal'
+            });
         }
     }
-
+    
+    // Проверка вертикальных совпадений
+    for (let j = 0; j < BOARD_SIZE; j++) {
+        let count = 1;
+        let type = board[0][j];
+        
+        for (let i = 1; i < BOARD_SIZE; i++) {
+            if (board[i][j] === type) {
+                count++;
+            } else {
+                if (count >= 3) {
+                    matches.push({
+                        col: j,
+                        startRow: i - count,
+                        endRow: i - 1,
+                        length: count,
+                        type: 'vertical'
+                    });
+                }
+                count = 1;
+                type = board[i][j];
+            }
+        }
+        if (count >= 3) {
+            matches.push({
+                col: j,
+                startRow: BOARD_SIZE - count,
+                endRow: BOARD_SIZE - 1,
+                length: count,
+                type: 'vertical'
+            });
+        }
+    }
+    
     return matches;
 }
 
-function dropCells() {
-    for (let col = 0; col < GRID_SIZE; col++) {
-        let emptyRow = GRID_SIZE - 1;
-        for (let row = GRID_SIZE - 1; row >= 0; row--) {
-            if (board[row][col] !== null) {
-                if (emptyRow !== row) {
-                    board[emptyRow][col] = board[row][col];
-                    board[row][col] = null;
-                }
-                emptyRow--;
+// Обработка совпадений
+async function processMatches(matches) {
+    // Начисление очков
+    matches.forEach(match => {
+        score += MATCH_SCORES[match.length] || 0;
+    });
+    updateDisplay();
+    
+    // Удаление совпавших элементов и добавление анимации
+    matches.forEach(match => {
+        if (match.type === 'horizontal') {
+            for (let j = match.startCol; j <= match.endCol; j++) {
+                const cell = gameBoard.children[match.row * BOARD_SIZE + j];
+                cell.classList.add('match');
+                board[match.row][j] = null;
+            }
+        } else {
+            for (let i = match.startRow; i <= match.endRow; i++) {
+                const cell = gameBoard.children[i * BOARD_SIZE + match.col];
+                cell.classList.add('match');
+                board[i][match.col] = null;
             }
         }
+    });
+
+    // Ждем завершения анимации
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Падение элементов
+    await dropElements();
+    
+    // Заполнение пустых ячеек
+    fillEmptyCells();
+    
+    // Проверка новых совпадений
+    const newMatches = findMatches();
+    if (newMatches.length > 0) {
+        await processMatches(newMatches);
     }
+    
+    renderBoard();
 }
 
-function fillEmptyCells() {
-    for (let i = 0; i < GRID_SIZE; i++) {
-        for (let j = 0; j < GRID_SIZE; j++) {
+// Падение элементов
+async function dropElements() {
+    let moved = false;
+    
+    for (let j = 0; j < BOARD_SIZE; j++) {
+        let emptySpaces = 0;
+        
+        for (let i = BOARD_SIZE - 1; i >= 0; i--) {
             if (board[i][j] === null) {
-                board[i][j] = getRandomFlower();
+                emptySpaces++;
+            } else if (emptySpaces > 0) {
+                board[i + emptySpaces][j] = board[i][j];
+                board[i][j] = null;
+                moved = true;
+            }
+        }
+    }
+    
+    if (moved) {
+        renderBoard();
+        // Добавляем небольшую задержку для анимации падения
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+}
+
+// Заполнение пустых ячеек
+function fillEmptyCells() {
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
+            if (board[i][j] === null) {
+                board[i][j] = Math.floor(Math.random() * FLOWERS.length);
             }
         }
     }
 }
 
-// Инициализация при загрузке
-document.addEventListener('DOMContentLoaded', () => {
-    initializeGame();
-    document.getElementById('startButton').addEventListener('click', startGame);
+// Обновление отображения
+function updateDisplay() {
+    scoreDisplay.textContent = score;
+    timeDisplay.textContent = timeLeft;
+}
+
+// Таймер игры
+function startTimer() {
+    if (gameTimer) clearInterval(gameTimer);
+    
+    gameTimer = setInterval(() => {
+        timeLeft--;
+        updateDisplay();
+        
+        if (timeLeft <= 0) {
+            endGame();
+        }
+    }, 1000);
+}
+
+// Завершение игры
+function endGame() {
+    isPlaying = false;
+    clearInterval(gameTimer);
+    finalScoreDisplay.textContent = score;
+    modal.classList.add('show');
+}
+
+// Обработчики событий
+startBtn.addEventListener('click', initGame);
+okBtn.addEventListener('click', () => {
+    modal.classList.remove('show');
 });
+
+// Инициализация страницы
+renderBoard();
