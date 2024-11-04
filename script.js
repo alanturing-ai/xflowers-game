@@ -15,18 +15,38 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedCell = null;
 
     // Сразу создаем поле при загрузке
-    createBoard();
-
     function createBoard() {
-        board.innerHTML = '';
+    board.innerHTML = '';
+    
+    // Создаем поле
+    function generateValidBoard() {
+        const cells = [];
         for (let i = 0; i < 36; i++) {
+            let newFlower;
+            do {
+                newFlower = flowers[Math.floor(Math.random() * flowers.length)];
+                cells[i] = newFlower;
+            } while (
+                // Проверка горизонтальных рядов
+                (i % 6 >= 2 &&
+                    cells[i-1] === newFlower &&
+                    cells[i-2] === newFlower) ||
+                // Проверка вертикальных рядов
+                (i >= 12 &&
+                    cells[i-6] === newFlower &&
+                    cells[i-12] === newFlower)
+            );
+            
             const cell = document.createElement('div');
             cell.classList.add('cell');
             cell.dataset.index = i;
-            cell.textContent = flowers[Math.floor(Math.random() * flowers.length)];
+            cell.textContent = newFlower;
             board.appendChild(cell);
         }
     }
+
+    generateValidBoard();
+}
 
     function startGame() {
         // Сброс предыдущей игры
