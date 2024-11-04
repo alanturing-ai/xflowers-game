@@ -1,11 +1,60 @@
-/* style.css */
-.game-container {
-    max-width: 400px;
-    margin: 20px auto;
+@charset "UTF-8";
+
+:root {
+    --game-bg: #f0f0f0;
+    --cell-bg: #f8f8f8;
+    --border-color: #ddd;
+    --button-bg: #4CAF50;
+    --button-hover: #45a049;
+    --timer-color: #666;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--game-bg);
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #f0f0f0;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+.header {
+    margin-bottom: 20px;
     text-align: center;
 }
 
-button {
+.score {
+    font-size: 24px;
+    margin: 10px 0;
+}
+
+.timer {
+    font-size: 20px;
+    color: #666;
+}
+
+#startButton {
     padding: 10px 20px;
     font-size: 18px;
     background: #4CAF50;
@@ -13,57 +62,53 @@ button {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    margin: 10px;
+    margin-bottom: 20px;
 }
 
-button:hover {
+#startButton:hover {
     background: #45a049;
 }
 
-.info-panel {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    font-size: 24px;
-}
-
-.grid {
+.game-board {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 5px;
-    background: #f0f0f0;
+    gap: 2px;
+    background: #fff;
     padding: 10px;
     border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
 .cell {
-    aspect-ratio: 1;
-    background: white;
-    border: 2px solid #ddd;
-    border-radius: 5px;
+    width: 60px;
+    height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 30px;
+    font-size: 40px;
+    background: #f8f8f8;
+    border: 2px solid #ddd;
+    border-radius: 5px;
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: transform 0.3s, background-color 0.3s;
 }
 
-.cell:hover {
-    transform: scale(1.05);
+.cell.selected {
+    background: #e0f7fa;
+    transform: scale(0.95);
 }
 
-.selected {
-    border-color: #4CAF50;
-    background: #e8f5e9;
+.cell.matched {
+    animation: match 0.5s;
 }
 
-.end-screen {
-    text-align: center;
-    margin-top: 20px;
+@keyframes match {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(0); }
 }
 
-.start-screen {
-    text-align: center;
-    margin-top: 50px;
+@keyframes drop {
+    0% { transform: translateY(-60px); }
+    100% { transform: translateY(0); }
 }
