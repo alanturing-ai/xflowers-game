@@ -1,6 +1,7 @@
 const GRID_SIZE = 6;
 const GAME_TIME = 45;
 const FLOWERS = ['🌹', '🌷', '🌻', '🍁'];
+const MAX_CASCADES = 3;
 
 let score = 0;
 let timer = GAME_TIME;
@@ -8,13 +9,14 @@ let isPlaying = false;
 let selectedCell = null;
 let timerInterval;
 let board = [];
+let cascadeCount = 0;
 
 function initializeGame() {
     const gameBoard = document.getElementById('gameBoard');
     gameBoard.innerHTML = '';
     board = [];
+    cascadeCount = 0;
 
-    // Создаем доску
     for (let i = 0; i < GRID_SIZE; i++) {
         board[i] = [];
         for (let j = 0; j < GRID_SIZE; j++) {
@@ -22,17 +24,20 @@ function initializeGame() {
             cell.className = 'cell';
             cell.dataset.row = i;
             cell.dataset.col = j;
-            board[i][j] = FLOWERS[Math.floor(Math.random() * FLOWERS.length)];
+            board[i][j] = generateRandomFlower();
             cell.textContent = board[i][j];
             cell.addEventListener('click', handleCellClick);
             gameBoard.appendChild(cell);
         }
     }
     
-    // Убираем начальные совпадения
     while (checkForMatches()) {
         refillBoard();
     }
+}
+
+function generateRandomFlower() {
+    return FLOWERS[Math.floor(Math.random() * FLOWERS.length)];
 }
 
 function startGame() {
@@ -84,8 +89,8 @@ function handleCellClick(event) {
 
         if (isAdjacent(selectedCell, { row, col })) {
             swapCells(selectedCell, { row, col });
-            if (!checkForMatches()) {
-                // Если нет совпадений, меняем обратно
+            cascadeCount = 0;
+            if (!processCascade()) {
                 setTimeout(() => {
                     swapCells(selectedCell, { row, col });
                 }, 300);
@@ -106,8 +111,32 @@ function swapCells(cell1, cell2) {
     const temp = board[cell1.row][cell1.col];
     board[cell1.row][cell1.col] = board[cell2.row][cell2.col];
     board[cell2.row][cell2.col] = temp;
-    
     updateBoardDisplay();
+}
+
+async function processCascade() {
+    if (cascadeCount >= MAX_CASCADES) {
+        return false;
+    }
+
+    let hasMatches = checkForMatches();
+    if (!hasMatches) return false;
+
+    while (hasMatches && cascadeCount < MAX_CASCADES) {
+        cascadeCount++;
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        dropCells();
+        fillEmptyCells();
+        updateBoardDisplay();
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        hasMatches = checkForMatches();
+    }
+    
+    return true;
 }
 
 function checkForMatches() {
@@ -118,7 +147,7 @@ function checkForMatches() {
     for (let i = 0; i < GRID_SIZE; i++) {
         let count = 1;
         for (let j = 1; j < GRID_SIZE; j++) {
-            if (board[i][j] === board[i][j-1]) {
+            if (board[i][j] && board[i][j] === board[i][j-1]) {
                 count++;
             } else {
                 if (count >= 3) {
@@ -142,7 +171,7 @@ function checkForMatches() {
     for (let j = 0; j < GRID_SIZE; j++) {
         let count = 1;
         for (let i = 1; i < GRID_SIZE; i++) {
-            if (board[i][j] === board[i-1][j]) {
+            if (board[i][j] && board[i][j] === board[i-1][j]) {
                 count++;
             } else {
                 if (count >= 3) {
@@ -163,43 +192,20 @@ function checkForMatches() {
     }
 
     if (hasMatches) {
-        // Анимация и удаление совпадений
         matches.forEach(match => {
             const [row, col] = match.split(',').map(Number);
             const cell = document.querySelector(
                 `.cell[data-row="${row}"][data-col="${col}"]`
             );
             cell.classList.add('matched');
+            board[row][col] = null;
         });
 
-        // Начисление очков
-        score += matches.size * 100;
+        score += matches.size * 100 * (cascadeCount + 1);
         updateScore();
-
-        // Задержка перед заполнением пустых ячеек
-        setTimeout(() => {
-            removeMatches(matches);
-            dropCells();
-            refillBoard();
-            updateBoardDisplay();
-            
-            // Проверка на новые совпадения после падения
-            setTimeout(() => {
-                if (checkForMatches()) {
-                    // Рекурсивная проверка новых совпадений
-                }
-            }, 300);
-        }, 500);
     }
 
     return hasMatches;
-}
-
-function removeMatches(matches) {
-    matches.forEach(match => {
-        const [row, col] = match.split(',').map(Number);
-        board[row][col] = null;
-    });
 }
 
 function dropCells() {
@@ -210,6 +216,11 @@ function dropCells() {
                 if (emptyRow !== row) {
                     board[emptyRow][col] = board[row][col];
                     board[row][col] = null;
+                    
+                    const cell = document.querySelector(
+                        `.cell[data-row="${emptyRow}"][data-col="${col}"]`
+                    );
+                    cell.style.animation = 'drop 0.3s ease-in';
                 }
                 emptyRow--;
             }
@@ -217,11 +228,16 @@ function dropCells() {
     }
 }
 
-function refillBoard() {
+function fillEmptyCells() {
     for (let i = 0; i < GRID_SIZE; i++) {
         for (let j = 0; j < GRID_SIZE; j++) {
             if (board[i][j] === null) {
-                board[i][j] = FLOWERS[Math.floor(Math.random() * FLOWERS.length)];
+                board[i][j] = generateRandomFlower();
+                
+                const cell = document.querySelector(
+                    `.cell[data-row="${i}"][data-col="${j}"]`
+                );
+                cell.style.animation = 'drop 0.3s ease-in';
             }
         }
     }
@@ -234,8 +250,22 @@ function updateBoardDisplay() {
         const col = parseInt(cell.dataset.col);
         cell.textContent = board[row][col];
         cell.classList.remove('matched');
+        cell.style.animation = '';
     });
 }
 
-// Инициализация игры
-document.getElementById('startButton').addEventListener('click', startGame);
+function refillBoard() {
+    for (let i = 0; i < GRID_SIZE; i++) {
+        for (let j = 0; j < GRID_SIZE; j++) {
+            if (board[i][j] === null) {
+                board[i][j] = generateRandomFlower();
+            }
+        }
+    }
+}
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    initializeGame(); // Инициализируем игру
+    document.getElementById('startButton').addEventListener('click', startGame); // Добавляем обработчик кнопки
+});
