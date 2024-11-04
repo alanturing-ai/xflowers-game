@@ -5,32 +5,26 @@ let score = 0;
 let timeLeft = GAME_TIME;
 let selectedCell = null;
 let timer = null;
+let gameStarted = false;
 
 document.getElementById('startButton').addEventListener('click', startGame);
-document.getElementById('restartButton').addEventListener('click', startGame);
 
 function startGame() {
-    score = 0;
-    timeLeft = GAME_TIME;
-    document.getElementById('startScreen').style.display = 'none';
-    document.getElementById('endScreen').style.display = 'none';
-    document.getElementById('gameScreen').style.display = 'block';
-    document.getElementById('score').textContent = '0';
-    document.getElementById('timer').textContent = GAME_TIME;
-    
-    const grid = document.getElementById('grid');
-    grid.innerHTML = '';
-    initGame();
-}
-
-function initGame() {
-    createGrid();
-    startTimer();
-    updateScore(0);
+    if(!gameStarted) {
+        gameStarted = true;
+        score = 0;
+        timeLeft = GAME_TIME;
+        document.getElementById('score').textContent = '0';
+        document.getElementById('timer').textContent = GAME_TIME;
+        document.getElementById('startButton').style.display = 'none';
+        createGrid();
+        startTimer();
+    }
 }
 
 function createGrid() {
     const grid = document.getElementById('grid');
+    grid.innerHTML = '';
     for(let i = 0; i < 36; i++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
@@ -41,6 +35,7 @@ function createGrid() {
 }
 
 function handleCellClick(cell) {
+    if(!gameStarted) return;
     if (selectedCell === null) {
         selectedCell = cell;
         cell.classList.add('selected');
@@ -149,8 +144,8 @@ function startTimer() {
 }
 
 function endGame() {
-    document.getElementById('gameScreen').style.display = 'none';
-    document.getElementById('endScreen').style.display = 'block';
-    document.getElementById('finalScore').textContent = score;
+    gameStarted = false;
+    alert(`Игра окончена! Ваш счет: ${score}`);
+    document.getElementById('startButton').style.display = 'block';
     clearInterval(timer);
 }
